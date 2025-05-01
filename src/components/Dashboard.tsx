@@ -37,21 +37,52 @@ const Dashboard = () => {
   };
 
   const startRecording = () => {
+    if (isRecording) return; // Prevent starting multiple recordings
+    
     setIsRecording(true);
     
-    // Simulate speech recognition
     toast({
       title: "Listening...",
       description: "Say a student's name to mark them present",
     });
     
-    // Simulate a delay and recognition
+    // Start the continuous recording process
+    startContinuousRecording();
+  };
+  
+  const startContinuousRecording = () => {
+    // Find students who haven't been marked yet
+    const remainingStudents = students.filter(s => !s.present);
+    
+    if (remainingStudents.length === 0) {
+      // All students have been marked, stop recording
+      stopRecording();
+      return;
+    }
+    
+    // Simulate a delay and recognition for one student
     setTimeout(() => {
-      // Select a random student to mark present
-      const randomIndex = Math.floor(Math.random() * students.length);
-      markStudentPresent(students[randomIndex].id);
-      setIsRecording(false);
-    }, 2000);
+      // Select a random student from those not yet marked
+      const unmarkedStudents = students.filter(s => !s.present);
+      if (unmarkedStudents.length > 0) {
+        const randomIndex = Math.floor(Math.random() * unmarkedStudents.length);
+        markStudentPresent(unmarkedStudents[randomIndex].id);
+        
+        // Continue recording for next student
+        startContinuousRecording();
+      } else {
+        // All students marked, stop recording
+        stopRecording();
+      }
+    }, 2000); // 2 second delay between students
+  };
+  
+  const stopRecording = () => {
+    setIsRecording(false);
+    toast({
+      title: "Recording Stopped",
+      description: "Attendance marking completed",
+    });
   };
   
   const markStudentPresent = (id: number) => {
@@ -72,6 +103,7 @@ const Dashboard = () => {
 
   const handleSubmit = () => {
     setSubmitted(true);
+    setIsRecording(false); // Ensure recording stops when submitting
     toast({
       title: "Attendance Submitted",
       description: `Submitted attendance for ${students.filter(s => s.present).length} students`,
@@ -100,10 +132,10 @@ const Dashboard = () => {
         <CardContent className="flex flex-col items-center">
           <Button
             onClick={startRecording}
-            disabled={isRecording || submitted}
+            disabled={submitted}
             className={`w-20 h-20 rounded-full mb-4 attendance-gradient
               ${isRecording ? 'voice-recording' : 'hover:opacity-90'}`}
-            aria-label="Start recording"
+            aria-label={isRecording ? "Recording in progress" : "Start recording"}
           >
             {isRecording ? (
               <Mic className="h-10 w-10 text-white animate-pulse" />
@@ -112,7 +144,7 @@ const Dashboard = () => {
             )}
           </Button>
           <p className="text-sm text-voice-purple-dark mb-6">
-            {isRecording ? "Listening..." : "Tap mic to start voice attendance"}
+            {isRecording ? "Listening... Say student names" : "Tap mic to start voice attendance"}
           </p>
           
           <div className="flex justify-between w-full p-3 bg-voice-yellow-light rounded-lg">
@@ -160,7 +192,7 @@ const Dashboard = () => {
                       size="sm" 
                       variant="ghost" 
                       className="ml-2"
-                      disabled={submitted}
+                      disabled={submitted || isRecording} // Disable manual marking during recording
                       onClick={() => markStudentPresent(student.id)}
                     >
                       {student.present ? (
@@ -179,7 +211,7 @@ const Dashboard = () => {
         <div className="flex justify-end">
           <Button
             onClick={handleSubmit}
-            disabled={submitted}
+            disabled={submitted || isRecording} // Disable submit during recording
             className="attendance-gradient hover:opacity-90 transition-opacity px-6"
           >
             <Send className="h-4 w-4 mr-2" />
