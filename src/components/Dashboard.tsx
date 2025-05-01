@@ -1,10 +1,12 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
+import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { useToast } from "@/components/ui/use-toast";
-import { Mic, MicOff, Send } from "lucide-react";
+import { Send } from "lucide-react";
+import TeacherInfo from './attendance/TeacherInfo';
+import StudentList from './attendance/StudentList';
+import RecordingControls from './attendance/RecordingControls';
 
 interface Student {
   id: number;
@@ -17,6 +19,7 @@ const Dashboard = () => {
   const { toast } = useToast();
   const [isRecording, setIsRecording] = useState(false);
   const [submitted, setSubmitted] = useState(false);
+  const [recordingInterval, setRecordingInterval] = useState<NodeJS.Timeout | null>(null);
   const [students, setStudents] = useState<Student[]>([
     { id: 1, name: "Ravi Kumar", rollNumber: 101, present: false },
     { id: 2, name: "Priya Sharma", rollNumber: 102, present: false },
@@ -26,9 +29,6 @@ const Dashboard = () => {
     { id: 6, name: "Neha Gupta", rollNumber: 106, present: false },
   ]);
   
-  // Sort students by roll number
-  const sortedStudents = [...students].sort((a, b) => a.rollNumber - b.rollNumber);
-
   // Mock teacher data
   const teacherInfo = {
     name: "Dr. Anil Kapoor",
@@ -36,52 +36,70 @@ const Dashboard = () => {
     code: "CS101",
   };
 
+  // Cleanup interval when component unmounts
+  useEffect(() => {
+    return () => {
+      if (recordingInterval) {
+        clearInterval(recordingInterval);
+      }
+    };
+  }, [recordingInterval]);
+
+  const toggleRecording = () => {
+    if (isRecording) {
+      stopRecording();
+    } else {
+      startRecording();
+    }
+  };
+  
   const startRecording = () => {
-    if (isRecording) return; // Prevent starting multiple recordings
-    
     setIsRecording(true);
     
     toast({
-      title: "Listening...",
-      description: "Say a student's name to mark them present",
+      title: "Recording Started",
+      description: "Voice attendance is now active",
     });
     
-    // Start the continuous recording process
-    startContinuousRecording();
+    // Create an interval that will mark a student present every 2 seconds
+    const interval = setInterval(() => {
+      markRandomStudent();
+    }, 2000);
+    
+    setRecordingInterval(interval);
   };
   
-  const startContinuousRecording = () => {
+  const markRandomStudent = () => {
     // Find students who haven't been marked yet
-    const remainingStudents = students.filter(s => !s.present);
+    const unmarkedStudents = students.filter(s => !s.present);
     
-    if (remainingStudents.length === 0) {
+    if (unmarkedStudents.length === 0) {
       // All students have been marked, stop recording
       stopRecording();
       return;
     }
     
-    // Simulate a delay and recognition for one student
-    setTimeout(() => {
-      // Select a random student from those not yet marked
-      const unmarkedStudents = students.filter(s => !s.present);
-      if (unmarkedStudents.length > 0) {
-        const randomIndex = Math.floor(Math.random() * unmarkedStudents.length);
-        markStudentPresent(unmarkedStudents[randomIndex].id);
-        
-        // Continue recording for next student
-        startContinuousRecording();
-      } else {
-        // All students marked, stop recording
-        stopRecording();
-      }
-    }, 2000); // 2 second delay between students
+    // Select a random student from those not yet marked
+    const randomIndex = Math.floor(Math.random() * unmarkedStudents.length);
+    markStudentPresent(unmarkedStudents[randomIndex].id);
+    
+    // If this was the last student, stop recording
+    if (unmarkedStudents.length === 1) {
+      stopRecording();
+    }
   };
   
   const stopRecording = () => {
     setIsRecording(false);
+    
+    if (recordingInterval) {
+      clearInterval(recordingInterval);
+      setRecordingInterval(null);
+    }
+    
     toast({
       title: "Recording Stopped",
-      description: "Attendance marking completed",
+      description: "Voice attendance marking paused",
     });
   };
   
@@ -103,7 +121,12 @@ const Dashboard = () => {
 
   const handleSubmit = () => {
     setSubmitted(true);
-    setIsRecording(false); // Ensure recording stops when submitting
+    
+    // Ensure recording stops when submitting
+    if (isRecording) {
+      stopRecording();
+    }
+    
     toast({
       title: "Attendance Submitted",
       description: `Submitted attendance for ${students.filter(s => s.present).length} students`,
@@ -114,104 +137,35 @@ const Dashboard = () => {
     <div className="container mx-auto max-w-4xl p-4 animate-fade-in">
       <Card className="mb-6 card-gradient">
         <CardHeader>
-          <div className="flex flex-col md:flex-row md:justify-between items-center">
-            <div className="text-center md:text-left mb-4 md:mb-0">
-              <CardTitle className="text-2xl font-bold text-voice-purple-dark">
-                {teacherInfo.name}
-              </CardTitle>
-              <CardDescription className="text-lg">
-                {teacherInfo.subject} - <span className="font-semibold">{teacherInfo.code}</span>
-              </CardDescription>
-            </div>
-            <div className="text-sm text-right">
-              <p className="font-semibold">Date: {new Date().toLocaleDateString()}</p>
-              <p>Time: {new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</p>
-            </div>
-          </div>
+          <TeacherInfo 
+            name={teacherInfo.name} 
+            subject={teacherInfo.subject} 
+            code={teacherInfo.code} 
+          />
         </CardHeader>
         <CardContent className="flex flex-col items-center">
-          <Button
-            onClick={startRecording}
-            disabled={submitted}
-            className={`w-20 h-20 rounded-full mb-4 attendance-gradient
-              ${isRecording ? 'voice-recording' : 'hover:opacity-90'}`}
-            aria-label={isRecording ? "Recording in progress" : "Start recording"}
-          >
-            {isRecording ? (
-              <Mic className="h-10 w-10 text-white animate-pulse" />
-            ) : (
-              <Mic className="h-10 w-10 text-white" />
-            )}
-          </Button>
-          <p className="text-sm text-voice-purple-dark mb-6">
-            {isRecording ? "Listening... Say student names" : "Tap mic to start voice attendance"}
-          </p>
-          
-          <div className="flex justify-between w-full p-3 bg-voice-yellow-light rounded-lg">
-            <div className="text-sm">
-              <span className="font-semibold">Total:</span> {students.length} students
-            </div>
-            <div className="text-sm">
-              <span className="font-semibold">Present:</span> {students.filter(s => s.present).length} students
-            </div>
-            <div className="text-sm">
-              <span className="font-semibold">Absent:</span> {students.filter(s => !s.present).length} students
-            </div>
-          </div>
+          <RecordingControls 
+            isRecording={isRecording}
+            submitted={submitted}
+            presentCount={students.filter(s => s.present).length}
+            totalCount={students.length}
+            onToggleRecording={toggleRecording}
+          />
         </CardContent>
       </Card>
       
       <div className="space-y-4">
-        <div className="bg-white rounded-lg shadow p-4">
-          <h3 className="font-medium text-lg mb-3 text-voice-purple-dark">Student Attendance</h3>
-          <div className="grid grid-cols-1 gap-2">
-            {sortedStudents.map((student) => (
-              <Card 
-                key={student.id}
-                className={`transition-all duration-300 hover:shadow-md ${
-                  student.present 
-                    ? 'border-l-4 border-l-green-500 bg-voice-green-light' 
-                    : 'border-l-4 border-l-gray-300'
-                }`}
-              >
-                <CardContent className="p-3 flex items-center justify-between">
-                  <div className="flex items-center">
-                    <div className="w-8 h-8 rounded-full flex items-center justify-center mr-3 bg-voice-purple-light">
-                      {student.rollNumber}
-                    </div>
-                    <span className={student.present ? 'font-medium' : ''}>{student.name}</span>
-                  </div>
-                  <div className="flex items-center">
-                    <Badge
-                      variant={student.present ? "default" : "outline"}
-                      className={student.present ? "bg-green-500 hover:bg-green-600" : ""}
-                    >
-                      {student.present ? "Present" : "Absent"}
-                    </Badge>
-                    <Button 
-                      size="sm" 
-                      variant="ghost" 
-                      className="ml-2"
-                      disabled={submitted || isRecording} // Disable manual marking during recording
-                      onClick={() => markStudentPresent(student.id)}
-                    >
-                      {student.present ? (
-                        <MicOff className="h-4 w-4 text-voice-purple" />
-                      ) : (
-                        <Mic className="h-4 w-4 text-voice-purple" />
-                      )}
-                    </Button>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-        </div>
+        <StudentList 
+          students={students}
+          submitted={submitted}
+          isRecording={isRecording}
+          onMarkPresent={markStudentPresent}
+        />
         
         <div className="flex justify-end">
           <Button
             onClick={handleSubmit}
-            disabled={submitted || isRecording} // Disable submit during recording
+            disabled={submitted || isRecording}
             className="attendance-gradient hover:opacity-90 transition-opacity px-6"
           >
             <Send className="h-4 w-4 mr-2" />
