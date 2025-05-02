@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
@@ -29,11 +28,11 @@ const Dashboard = () => {
     { id: 6, name: "Neha Gupta", rollNumber: 106, present: false },
   ]);
   
-  // Default teacher data that can be updated by user
+  // Default empty teacher data for user to fill in
   const [teacherInfo, setTeacherInfo] = useState({
-    name: "Enter Teacher Name",
-    subject: "Subject",
-    code: "Code",
+    name: "",
+    subject: "",
+    code: "",
   });
 
   // Cleanup interval when component unmounts
@@ -46,6 +45,15 @@ const Dashboard = () => {
   }, [recordingInterval]);
 
   const toggleRecording = () => {
+    // Don't allow recording if teacher info is not set
+    if (!teacherInfo.name || !teacherInfo.subject || !teacherInfo.code) {
+      toast({
+        title: "Teacher info required",
+        description: "Please enter your name and subject details first",
+      });
+      return;
+    }
+    
     if (isRecording) {
       stopRecording();
     } else {
@@ -118,7 +126,7 @@ const Dashboard = () => {
       return student;
     }));
   };
-
+  
   const handleSubmit = () => {
     setSubmitted(true);
     
@@ -142,13 +150,13 @@ const Dashboard = () => {
     
     toast({
       title: "Teacher Info Updated",
-      description: "Teacher details have been updated",
+      description: "Teacher details have been saved",
     });
   };
 
   return (
-    <div className="container mx-auto max-w-3xl p-4 animate-fade-in">
-      <Card className="mb-4 shadow-sm border border-voice-purple/20">
+    <div className="container mx-auto max-w-3xl p-4">
+      <Card className="mb-4 shadow-sm border border-gray-200">
         <CardHeader>
           <TeacherInfo 
             name={teacherInfo.name} 
@@ -157,36 +165,40 @@ const Dashboard = () => {
             onUpdate={updateTeacherInfo}
           />
         </CardHeader>
-        <CardContent className="flex flex-col items-center">
-          <RecordingControls 
-            isRecording={isRecording}
-            submitted={submitted}
-            presentCount={students.filter(s => s.present).length}
-            totalCount={students.length}
-            onToggleRecording={toggleRecording}
-          />
-        </CardContent>
+        {(teacherInfo.name && teacherInfo.subject && teacherInfo.code) && (
+          <CardContent className="flex flex-col items-center">
+            <RecordingControls 
+              isRecording={isRecording}
+              submitted={submitted}
+              presentCount={students.filter(s => s.present).length}
+              totalCount={students.length}
+              onToggleRecording={toggleRecording}
+            />
+          </CardContent>
+        )}
       </Card>
       
-      <div className="space-y-4">
-        <StudentList 
-          students={students}
-          submitted={submitted}
-          isRecording={isRecording}
-          onMarkPresent={markStudentPresent}
-        />
-        
-        <div className="flex justify-end">
-          <Button
-            onClick={handleSubmit}
-            disabled={submitted || isRecording}
-            className="attendance-gradient hover:opacity-90 transition-opacity px-6"
-          >
-            <Send className="h-4 w-4 mr-2" />
-            {submitted ? "Submitted" : "Submit Attendance"}
-          </Button>
+      {(teacherInfo.name && teacherInfo.subject && teacherInfo.code) && (
+        <div className="space-y-4">
+          <StudentList 
+            students={students}
+            submitted={submitted}
+            isRecording={isRecording}
+            onMarkPresent={markStudentPresent}
+          />
+          
+          <div className="flex justify-end">
+            <Button
+              onClick={handleSubmit}
+              disabled={submitted || isRecording || students.filter(s => s.present).length === 0}
+              className="attendance-gradient hover:opacity-90 transition-opacity px-6"
+            >
+              <Send className="h-4 w-4 mr-2" />
+              {submitted ? "Submitted" : "Submit Attendance"}
+            </Button>
+          </div>
         </div>
-      </div>
+      )}
     </div>
   );
 };

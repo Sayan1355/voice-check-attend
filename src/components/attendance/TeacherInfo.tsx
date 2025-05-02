@@ -3,7 +3,8 @@ import React, { useState } from 'react';
 import { CardTitle, CardDescription } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Edit, Check } from "lucide-react";
+import { Check } from "lucide-react";
+import { Label } from "@/components/ui/label";
 
 interface TeacherInfoProps {
   name: string;
@@ -18,7 +19,7 @@ const TeacherInfo: React.FC<TeacherInfoProps> = ({
   code,
   onUpdate 
 }) => {
-  const [isEditing, setIsEditing] = useState(false);
+  const [isEditing, setIsEditing] = useState(!name || name === "Enter Teacher Name");
   const [teacherName, setTeacherName] = useState(name);
   const [subjectName, setSubjectName] = useState(subject);
   const [subjectCode, setSubjectCode] = useState(code);
@@ -31,39 +32,52 @@ const TeacherInfo: React.FC<TeacherInfoProps> = ({
   };
 
   return (
-    <div className="flex flex-col md:flex-row md:justify-between items-center">
+    <div className="w-full">
       {isEditing ? (
-        <div className="w-full md:w-2/3 space-y-2">
-          <Input 
-            value={teacherName}
-            onChange={(e) => setTeacherName(e.target.value)}
-            placeholder="Teacher Name"
-            className="border-voice-purple"
-          />
-          <div className="flex gap-2">
+        <div className="space-y-4 p-4 bg-white rounded-lg shadow-sm border border-voice-purple/20">
+          <div className="space-y-2">
+            <Label htmlFor="teacherName" className="text-voice-purple-dark">Teacher Name</Label>
             <Input 
-              value={subjectName}
-              onChange={(e) => setSubjectName(e.target.value)}
-              placeholder="Subject"
-              className="border-voice-purple"
-            />
-            <Input 
-              value={subjectCode}
-              onChange={(e) => setSubjectCode(e.target.value)}
-              placeholder="Code"
-              className="border-voice-purple w-24"
+              id="teacherName"
+              value={teacherName}
+              onChange={(e) => setTeacherName(e.target.value)}
+              placeholder="Enter your name"
+              className="border-voice-purple/30 focus:border-voice-purple"
             />
           </div>
+          
+          <div className="flex gap-4">
+            <div className="space-y-2 flex-1">
+              <Label htmlFor="subjectName" className="text-voice-purple-dark">Subject</Label>
+              <Input 
+                id="subjectName"
+                value={subjectName}
+                onChange={(e) => setSubjectName(e.target.value)}
+                placeholder="Subject name"
+                className="border-voice-purple/30 focus:border-voice-purple"
+              />
+            </div>
+            <div className="space-y-2 w-1/3">
+              <Label htmlFor="subjectCode" className="text-voice-purple-dark">Code</Label>
+              <Input 
+                id="subjectCode"
+                value={subjectCode}
+                onChange={(e) => setSubjectCode(e.target.value)}
+                placeholder="Code"
+                className="border-voice-purple/30 focus:border-voice-purple"
+              />
+            </div>
+          </div>
+          
           <Button 
             onClick={handleSave}
-            size="sm" 
-            className="attendance-gradient"
+            className="attendance-gradient w-full mt-2"
           >
-            <Check className="h-4 w-4 mr-1" /> Save
+            <Check className="h-4 w-4 mr-1" /> Start Attendance
           </Button>
         </div>
       ) : (
-        <div className="text-center md:text-left mb-4 md:mb-0 flex items-center">
+        <div className="flex justify-between items-center text-center md:text-left mb-4">
           <div>
             <CardTitle className="text-xl font-bold text-voice-purple-dark">
               {name}
@@ -72,21 +86,11 @@ const TeacherInfo: React.FC<TeacherInfoProps> = ({
               {subject} - <span className="font-semibold">{code}</span>
             </CardDescription>
           </div>
-          {onUpdate && (
-            <Button 
-              variant="ghost" 
-              size="sm" 
-              className="ml-2" 
-              onClick={() => setIsEditing(true)}
-            >
-              <Edit className="h-4 w-4 text-voice-purple" />
-            </Button>
-          )}
+          <div className="text-sm text-right">
+            <p>{new Date().toLocaleDateString()}</p>
+          </div>
         </div>
       )}
-      <div className="text-sm text-right">
-        <p>{new Date().toLocaleDateString()}</p>
-      </div>
     </div>
   );
 };
