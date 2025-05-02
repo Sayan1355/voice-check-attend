@@ -29,12 +29,12 @@ const Dashboard = () => {
     { id: 6, name: "Neha Gupta", rollNumber: 106, present: false },
   ]);
   
-  // Mock teacher data
-  const teacherInfo = {
-    name: "Dr. Anil Kapoor",
-    subject: "Computer Science",
-    code: "CS101",
-  };
+  // Default teacher data that can be updated by user
+  const [teacherInfo, setTeacherInfo] = useState({
+    name: "Enter Teacher Name",
+    subject: "Subject",
+    code: "Code",
+  });
 
   // Cleanup interval when component unmounts
   useEffect(() => {
@@ -133,14 +133,28 @@ const Dashboard = () => {
     });
   };
 
+  const updateTeacherInfo = (name: string, subject: string, code: string) => {
+    setTeacherInfo({
+      name,
+      subject,
+      code
+    });
+    
+    toast({
+      title: "Teacher Info Updated",
+      description: "Teacher details have been updated",
+    });
+  };
+
   return (
-    <div className="container mx-auto max-w-4xl p-4 animate-fade-in">
-      <Card className="mb-6 card-gradient">
+    <div className="container mx-auto max-w-3xl p-4 animate-fade-in">
+      <Card className="mb-4 shadow-sm border border-voice-purple/20">
         <CardHeader>
           <TeacherInfo 
             name={teacherInfo.name} 
             subject={teacherInfo.subject} 
             code={teacherInfo.code} 
+            onUpdate={updateTeacherInfo}
           />
         </CardHeader>
         <CardContent className="flex flex-col items-center">
